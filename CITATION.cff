@@ -1,8 +1,11 @@
-@misc{anthem_sampling_zenodo,
-  title        = {An Anthem for Controlled Stochasticity: Temperature, Top-k, Top-p, and Min-p Sampling Under Persona Conditioning},
-  author       = {Asari},
-  year         = {2025},
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.18092973},
-  url          = {https://doi.org/10.5281/zenodo.18092973}
-}
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+authors:
+- given-names: "Asari"
+- family-names: "Ison"
+  given-names: "Payton"
+title: "An Anthem for Controlled Stochasticity: Temperature, Top-k, Top-p, and Min-p Sampling Under Persona Conditioning"
+version: 1.0
+doi: 10.5281/zenodo.18092973
+date-released: 2025-12-30
+url: "https://doi.org/10.5281/zenodo.18092973"
