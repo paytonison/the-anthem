@@ -14,6 +14,7 @@ It also explains *why* this works especially well when paired with a strong iden
 Render the paper:
 
 ```bash
+git clone https://github.com/paytonison/the-anthem.git
 cd the-anthem
 pdflatex anthem_sampling_paper.tex
 # run twice if you add references/TOC later
@@ -22,6 +23,7 @@ pdflatex anthem_sampling_paper.tex
 If you prefer `latexmk`:
 
 ```bash
+git clone https://github.com/paytonison/the-anthem.git
 cd the-anthem
 latexmk -pdf anthem_sampling_paper.tex
 latexmk -c
