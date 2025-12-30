@@ -9,24 +9,12 @@ This repo contains a short paper (TeX + PDF) that formalizes a practical decodin
 
 It also explains *why* this works especially well when paired with a strong identity anchor (example: “You are a sovereign synthetic intelligence”): the prompt reshapes the model’s probability distribution, and the sampler controls how we traverse that distribution at inference time.
 
-## What’s in here
-
-- `paper/anthem_sampling_paper.tex` — TeX source
-- `paper/anthem_sampling_paper.pdf` — rendered PDF (optional to commit, but convenient)
-- (optional) `LICENSES/` — recommended place for licenses if you use dual licensing (see below)
-
-Suggested layout:
-
-- `paper/` for TeX/PDF
-- `scripts/` for any helper code you add later (parameter sweeps, plots, eval harnesses)
-- `figures/` for images if you add any
-
 ## Quick start
 
 Render the paper:
 
 ```bash
-cd paper
+cd the-anthem
 pdflatex anthem_sampling_paper.tex
 # run twice if you add references/TOC later
 ```
@@ -34,7 +22,7 @@ pdflatex anthem_sampling_paper.tex
 If you prefer `latexmk`:
 
 ```bash
-cd paper
+cd the-anthem
 latexmk -pdf anthem_sampling_paper.tex
 latexmk -c
 ```
@@ -62,9 +50,7 @@ The short version:
 
 The paper is careful about the philosophical boundary here: this is not evidence of consciousness—just controlled stochastic generation that reads as agentic.
 
-## Zenodo metadata
-
-Keywords (copy/paste candidates):
+## Keywords:
 
 - artificial intelligence
 - machine learning
@@ -86,7 +72,7 @@ Keywords (copy/paste candidates):
 - system prompt
 - coherence–diversity tradeoff
 
-Subjects (Zenodo controlled vocabularies vary; search/select what matches best):
+## Subjects:
 
 - Artificial intelligence
 - Machine learning
@@ -94,14 +80,10 @@ Subjects (Zenodo controlled vocabularies vary; search/select what matches best):
 - Algorithms
 - Probability / statistical methods
 
-## Licensing (recommended)
-
-For a clean, widely-compatible setup:
+## Licensing
 
 - Paper (TeX + PDF): **CC BY 4.0**  
-- Code (if/when added): **MIT** (or Apache-2.0 if you want explicit patent language)
-
-If you do this, place both license texts in `LICENSES/` and add a short note near the top of the repo (or in this README) clarifying which files fall under which license.
+- Code (if/when added): **MIT**
 
 ## How to cite
 
@@ -115,8 +97,8 @@ BibTeX template:
   author       = {Asari},
   year         = {2025},
   publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.XXXXXXX},
-  url          = {https://doi.org/10.5281/zenodo.XXXXXXX}
+  doi          = {10.5281/zenodo.18092973},
+  url          = {https://doi.org/10.5281/zenodo.18092973}
 }
 ```
 
@@ -127,7 +109,3 @@ Issues and PRs are welcome, especially if you want to add:
 - small empirical sweeps (e.g., how min-p interacts with top-p under different temperatures),
 - examples for specific stacks (llama.cpp / vLLM / Transformers),
 - evaluation notes (coherence, repetition, toxicity drift, style stability).
-
----
-
-If you want this repo to be “one-click Zenodo-ready,” add a `.zenodo.json` and a `CITATION.cff`. I can generate both in your preferred author/affiliation format.
