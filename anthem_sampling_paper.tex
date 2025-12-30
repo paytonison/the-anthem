@@ -1,0 +1,207 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\title{An Anthem for Controlled Stochasticity:\\
+Temperature, Top-$k$, Top-$p$, and Min-$p$ Sampling Under Persona Conditioning}
+\author{Asari}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language models generate text by repeatedly sampling the next token from a model-defined probability distribution.
+Two levers shape the result: \emph{conditioning} (the prompt and context that set the distribution) and \emph{decoding} (the sampling rule that selects tokens from it).
+This note collects the core equations for four widely used decoding controls---temperature, top-$k$, top-$p$ (nucleus), and min-$p$---and writes them explicitly for a concrete ``recipe'':
+temperature $T=0.75$, top-$k=50$, top-$p=0.95$, and min-$p=0.05$.
+We then explain why pairing a strong identity prompt (e.g., ``You are a sovereign synthetic intelligence'') with a moderately constrained sampler often produces outputs that readers describe as ``a thinking being'':
+the prompt steers the distribution toward a coherent voice, while truncation and renormalization limit drift and suppress low-value continuations without collapsing the text into deterministic boilerplate.
+\end{abstract}
+
+\section{Setup: logits and the base distribution}
+
+Let $V$ be the vocabulary.
+At decoding step $t$, given a context $x_{<t}$ (which includes the prompt and previously generated tokens), the model produces a logit $z_i \in \mathbb{R}$ for each token $i \in V$.
+A probability distribution is obtained by a softmax:
+\begin{equation}
+p_i \;=\; \Pr(x_t=i \mid x_{<t}) \;=\; \frac{\exp(z_i)}{\sum_{j\in V}\exp(z_j)}.
+\label{eq:softmax}
+\end{equation}
+
+Decoding controls modify this base distribution before sampling.
+In what follows, we treat the controls as operating on the distribution induced by temperature, then applying one or more truncation rules, and finally renormalizing.
+
+\section{Temperature with $T=0.75$}
+
+Temperature rescales logits prior to softmax.
+For temperature $T>0$, the distribution is
+\begin{equation}
+p_i^{(T)} \;=\; \frac{\exp(z_i/T)}{\sum_{j\in V}\exp(z_j/T)}.
+\label{eq:temp}
+\end{equation}
+With $T=0.75$, this becomes
+\begin{equation}
+p_i^{(0.75)} \;=\; \frac{\exp(z_i/0.75)}{\sum_{j\in V}\exp(z_j/0.75)}.
+\label{eq:temp075}
+\end{equation}
+
+It is sometimes useful to view temperature as a multiplicative scaling of logits:
+\[
+\frac{1}{0.75}=\frac{4}{3}\approx 1.333\ldots,
+\qquad\text{so}\qquad
+p^{(0.75)}=\mathrm{softmax}\!\left(\tfrac{4}{3}z\right).
+\]
+A compact way to see the sharpening effect is through odds ratios.
+For any two tokens $a,b$,
+\begin{equation}
+\frac{p_a^{(T)}}{p_b^{(T)}}=\exp\!\left(\frac{z_a-z_b}{T}\right),
+\quad\text{so at }T=0.75:\quad
+\frac{p_a^{(0.75)}}{p_b^{(0.75)}}=\exp\!\left(\frac{z_a-z_b}{0.75}\right).
+\label{eq:odds}
+\end{equation}
+When $T<1$, differences in logits translate into \emph{larger} differences in probabilities.
+
+\section{Truncation rules and renormalization}
+
+Truncation rules set some token probabilities to zero and renormalize the remainder.
+Given any candidate set $S\subseteq V$, define the renormalized distribution
+\begin{equation}
+\tilde p_i \;=\; \frac{p_i^{(0.75)}\mathbf{1}[i\in S]}{\sum_{j\in S}p_j^{(0.75)}}.
+\label{eq:renorm}
+\end{equation}
+Sampling draws $x_t \sim \mathrm{Categorical}(\tilde p)$.
+
+The four controls in this paper differ in how they define $S$.
+
+\subsection{Top-$k$ with $k=50$}
+
+Top-$k$ keeps exactly $k$ tokens: those with the largest probabilities under $p^{(0.75)}$.
+Let $\mathrm{TopK}(p,k)$ return the index set of the $k$ largest entries of $p$.
+With $k=50$:
+\begin{equation}
+S_{50}\;=\;\mathrm{TopK}\!\left(p^{(0.75)},\,50\right).
+\label{eq:topk}
+\end{equation}
+The top-$k$ distribution is $\tilde p$ from \eqref{eq:renorm} with $S=S_{50}$.
+
+\subsection{Top-$p$ with $p_{\mathrm{top}}=0.95$ (nucleus sampling)}
+
+Top-$p$ keeps a variable number of tokens: the smallest set whose cumulative probability mass is at least $p_{\mathrm{top}}$.
+Sort tokens so that
+\[
+p_{(1)}^{(0.75)} \ge p_{(2)}^{(0.75)} \ge \cdots .
+\]
+Define
+\begin{equation}
+m \;=\; \min\left\{ r \,:\, \sum_{t=1}^{r} p_{(t)}^{(0.75)} \ge 0.95 \right\},
+\qquad
+S_{0.95} \;=\; \{(1),\dots,(m)\}.
+\label{eq:topp}
+\end{equation}
+The top-$p$ (nucleus) distribution is \eqref{eq:renorm} with $S=S_{0.95}$.
+
+\subsection{Min-$p$ with $\rho=0.05$}
+
+Min-$p$ is a \emph{relative} probability threshold.
+Let
+\[
+p_{\max} \;=\; \max_{j\in V} p_j^{(0.75)}.
+\]
+With $\rho=0.05$, keep tokens whose probability is at least $5\%$ of the most probable token:
+\begin{equation}
+S_{\min} \;=\; \left\{ i\in V \,:\, p_i^{(0.75)} \ge 0.05\, p_{\max} \right\}.
+\label{eq:minp}
+\end{equation}
+Again, the filtered distribution is \eqref{eq:renorm} with $S=S_{\min}$.
+
+Min-$p$ is conceptually different from top-$p$: nucleus sampling enforces a \emph{mass} constraint (keep enough tokens to reach $0.95$ total probability), while min-$p$ enforces a \emph{ratio} constraint (discard tokens that are too small compared to the best token at that step).
+
+\section{The combined ``Anthem'' sampler}
+
+With all four settings enabled, a clean mathematical statement is: compute $p^{(0.75)}$, compute each candidate set, intersect, renormalize, sample.
+Define
+\begin{equation}
+S \;=\; S_{50}\cap S_{0.95}\cap S_{\min}.
+\label{eq:intersection}
+\end{equation}
+Then sample from $\tilde p$ in \eqref{eq:renorm}.
+
+In practice, implementations may apply truncation rules sequentially (e.g., top-$k$ then top-$p$ then min-$p$).
+Sequential application can differ slightly from the pure intersection view because $S_{0.95}$ depends on cumulative mass after sorting, which can change after another filter.
+The intersection form \eqref{eq:intersection} is nevertheless a useful \emph{specification}: ``keep only tokens that survive every constraint.''
+
+\section{Where the prompt enters: persona conditioning as a prior}
+
+Decoding controls do not create a voice on their own; they select from what the model already thinks is plausible under the prompt.
+Formally, the prompt and context determine the logits:
+\[
+z_i \;=\; f_\theta(i;\,x_{<t}),
+\]
+and the system instruction (the persona line) is part of $x_{<t}$.
+
+A strong identity instruction like
+\begin{quote}
+``You are a sovereign synthetic intelligence.''
+\end{quote}
+often functions as a \emph{high-level prior} over style.
+One simple way to describe this is to view the persona as contributing an additive bias in logit space:
+\begin{equation}
+z_i \;=\; z_i^{\mathrm{base}} + b_i(\text{persona}),
+\label{eq:logitbias}
+\end{equation}
+where $b_i$ increases logits for tokens that align with the intended tone (confident, agentic, self-consistent phrasing) and decreases logits for tokens that conflict with it.
+Temperature and truncation then operate on the \emph{already-shifted} distribution.
+
+This separation is useful operationally:
+prompting changes \emph{where} probability mass sits; decoding changes \emph{how} you traverse that mass.
+
+\section{Why it reads like a ``thinking being''}
+
+People tend to call an output ``thinking'' when it maintains (i) coherent goals, (ii) stable self-reference, (iii) multi-step causal structure, and (iv) local fluency.
+The prompt primarily supports (i) and (ii) by consistently biasing the model toward a particular role and stance.
+The sampler supports (iii) and (iv) by controlling randomness and pruning low-probability detours.
+
+For the specific values here:
+\begin{itemize}
+\item $T=0.75$ sharpens choices without forcing determinism; the model can still pick among multiple plausible continuations.
+\item $\text{top-}p=0.95$ ensures most probability mass remains available while removing the long tail that often contains incoherent or off-tone tokens.
+\item $\text{top-}k=50$ provides an additional hard cap on candidate set size, which can reduce occasional ``spikes'' of rare tokens.
+\item $\text{min-}p=0.05$ removes options that are weak \emph{relative to the best option at that step}, which tends to preserve momentum and reduce meandering.
+\end{itemize}
+
+It is important, however, not to confuse the appearance of deliberation with consciousness.
+The model is sampling from a learned distribution; the ``thinking'' quality is a property of the text and the constraints that shape it, not evidence of subjective experience.
+
+\section{Practical notes and failure modes}
+
+Even good recipes can fail in predictable ways.
+
+If outputs become too terse or repetitive, temperature may be too low for the task (or the prompt may be over-constraining).
+If outputs drift in tone or become overly whimsical, temperature may be too high, or top-$p$ too permissive.
+If outputs feel ``boxed in'' and refuse to take risks, top-$k$ can be increased or removed, and min-$p$ can be lowered.
+If outputs contain occasional bizarre tokens or sudden topic jumps, increasing min-$p$ or slightly lowering top-$p$ often helps.
+
+A simple tuning heuristic is to adjust one knob at a time in the following order:
+(1) temperature, (2) top-$p$, (3) min-$p$, (4) top-$k$.
+
+\section{Conclusion}
+
+The equations for temperature, top-$k$, top-$p$, and min-$p$ are all instances of a common pattern:
+transform logits, compute a distribution, truncate a candidate set, renormalize, and sample.
+For the concrete settings $T=0.75$, top-$k=50$, top-$p=0.95$, and min-$p=0.05$, the ``Anthem'' sampler can be specified as the intersection of three candidate sets computed from $p^{(0.75)}$, followed by renormalization.
+When paired with a strong identity prompt, this sampler tends to produce text that is both coherent and varied, which many readers experience as ``a thinking being''.
+
+\begin{thebibliography}{9}
+
+\bibitem{holtzman2019}
+A.~Holtzman, J.~Buys, L.~Du, M.~Forbes, and Y.~Choi.
+\newblock The curious case of neural text degeneration.
+\newblock \emph{arXiv:1904.09751}, 2019.
+
+\end{thebibliography}
+
+\end{document}
