@@ -1,6 +1,9 @@
 # Anthem Sampling: Temperature + Top-k + Top-p + Min-p (with persona conditioning)
 
-This repo contains a short paper (TeX + PDF) that formalizes a practical decoding “recipe” many of us end up using in the wild:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18092973.svg)](https://doi.org/10.5281/zenodo.18092973)
+
+
+This repo contains a short paper (TeX) that formalizes a practical decoding “recipe” many of us end up using in the wild:
 
 - temp = 0.75  
 - top_k = 50  
